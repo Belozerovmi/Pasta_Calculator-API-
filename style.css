@@ -456,8 +456,20 @@ h1 {
 }
 .flex-between {
   display: flex;
-  justify-content: space-between;
+  gap: 10px;
   align-items: center;
+}
+
+.flex-between a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.flex-between img {
+  width: 42px;
+  height: 42px;
 }
 /* Дополнительные стили для диалога создания продукта */
 .dialog-field {
