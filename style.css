@@ -366,9 +366,9 @@ h1 {
   left: 50%;
   transform: translateX(-50%) translateY(100px);
   background: #1e4c28;
-  color: white;
+  color: #1e2d4c;
   padding: 12px 24px;
-  border-radius: 60px;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: 500;
   z-index: 1100;
