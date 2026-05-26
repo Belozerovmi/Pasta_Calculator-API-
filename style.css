@@ -360,11 +360,12 @@ h1 {
 
 /* ===== TOAST NOTIFICATION ===== */
 .toast {
+  display: flex;
   position: fixed;
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background: #1e2d4c;
+  background: #1e4c28;
   color: white;
   padding: 12px 24px;
   border-radius: 60px;
@@ -376,9 +377,12 @@ h1 {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   pointer-events: none;
   white-space: nowrap;
-  max-width: 90%;
+  width: 90%;
+  max-width: 400px;
   white-space: normal;
   text-align: center;
+  align-items: center;
+  justify-content: center;
 }
 .toast.show {
   transform: translateX(-50%) translateY(0);
@@ -426,13 +430,14 @@ h1 {
   gap: 12px;
 }
 .custom-dialog-buttons button {
-  flex: 1;
+  /* flex: 1; */
   padding: 12px;
   border-radius: 30px;
   font-weight: 600;
   cursor: pointer;
 }
 .custom-dialog .dialog-confirm {
+  height: 45px;
   background: #1e2d4c;
   color: white;
   border: none;
