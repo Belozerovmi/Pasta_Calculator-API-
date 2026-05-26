@@ -452,3 +452,26 @@ h1 {
   justify-content: space-between;
   align-items: center;
 }
+/* Дополнительные стили для диалога создания продукта */
+.dialog-field {
+  margin-bottom: 16px;
+}
+.dialog-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e2d4c;
+  margin-bottom: 6px;
+}
+.dialog-field input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #e2e7dd;
+  border-radius: 20px;
+  background: #f6f8f4;
+  font-size: 16px;
+}
+.dialog-field input:focus {
+  outline: none;
+  border-color: #acbdaa;
+}

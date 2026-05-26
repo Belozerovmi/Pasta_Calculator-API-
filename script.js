@@ -34,8 +34,9 @@ const scannerContainer = document.getElementById("scannerContainer");
 const closeModalBtn = document.getElementById("closeModal");
 
 let html5QrCode = null;
+let isModalOpen = false;
 
-// ---- TOAST УВЕДОМЛЕНИЯ (вместо alert) ----
+// ---- TOAST УВЕДОМЛЕНИЯ ----
 function showToast(message, isError = false) {
   let toast = document.querySelector(".toast");
   if (!toast) {
@@ -51,26 +52,37 @@ function showToast(message, isError = false) {
   }, 2500);
 }
 
-// ---- КАСТОМНЫЙ DIALOG (вместо prompt) ----
-function showCustomDialog(options) {
+// ---- КАСТОМНЫЙ DIALOG ДЛЯ СОЗДАНИЯ ПРОДУКТА (с подписями) ----
+function showCustomProductDialog() {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "custom-dialog-overlay";
     overlay.innerHTML = `
       <div class="custom-dialog">
-        <h4>${options.title || "Введите данные"}</h4>
-        ${options.fields
-          .map(
-            (f) => `
-          <input type="number" id="dialog_${f.name}" placeholder="${
-              f.placeholder
-            }" value="${f.default || ""}" step="any">
-        `
-          )
-          .join("")}
+        <h4>Создать свой продукт</h4>
+        <div class="dialog-field">
+          <label>Название продукта</label>
+          <input type="text" id="dialog_name" placeholder="например: Макароны Barilla" value="Мои макароны">
+        </div>
+        <div class="dialog-field">
+          <label>Калорийность (ккал на 100 г)</label>
+          <input type="number" id="dialog_kcal" placeholder="350" value="350" step="1">
+        </div>
+        <div class="dialog-field">
+          <label>Белки (г на 100 г)</label>
+          <input type="number" id="dialog_protein" placeholder="12" value="12" step="0.1">
+        </div>
+        <div class="dialog-field">
+          <label>Жиры (г на 100 г)</label>
+          <input type="number" id="dialog_fat" placeholder="1.5" value="1.5" step="0.1">
+        </div>
+        <div class="dialog-field">
+          <label>Углеводы (г на 100 г)</label>
+          <input type="number" id="dialog_carbs" placeholder="70" value="70" step="0.1">
+        </div>
         <div class="custom-dialog-buttons">
           <button class="dialog-cancel">Отмена</button>
-          <button class="dialog-confirm">${options.confirmText || "ОК"}</button>
+          <button class="dialog-confirm">Сохранить</button>
         </div>
       </div>
     `;
@@ -82,13 +94,25 @@ function showCustomDialog(options) {
     const close = () => overlay.remove();
 
     confirmBtn.onclick = () => {
-      const result = {};
-      options.fields.forEach((f) => {
-        const input = document.getElementById(`dialog_${f.name}`);
-        result[f.name] = input.value;
-      });
+      const name = document.getElementById("dialog_name").value.trim();
+      const kcal = parseFloat(document.getElementById("dialog_kcal").value);
+      const protein = parseFloat(
+        document.getElementById("dialog_protein").value
+      );
+      const fat = parseFloat(document.getElementById("dialog_fat").value);
+      const carbs = parseFloat(document.getElementById("dialog_carbs").value);
       close();
-      resolve(result);
+      if (!name) {
+        showToast("Введите название продукта", true);
+        resolve(null);
+        return;
+      }
+      if (isNaN(kcal) || isNaN(protein) || isNaN(fat) || isNaN(carbs)) {
+        showToast("Заполните все поля КБЖУ корректными числами", true);
+        resolve(null);
+        return;
+      }
+      resolve({ name, kcal, protein, fat, carbs });
     };
 
     cancelBtn.onclick = () => {
@@ -119,7 +143,6 @@ function saveHistory() {
 
 // ---- ДОБАВЛЕНИЕ ПРОДУКТА В ИСТОРИЮ ----
 function addToHistory(product) {
-  // Убираем дубликаты по имени + бренду
   const index = productHistory.findIndex(
     (p) => p.name === product.name && p.kcal === product.kcal
   );
@@ -158,7 +181,10 @@ function renderHistory() {
 
   if (productHistory.length === 0) {
     historySection.innerHTML = `
-      <div class="history-title"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-history"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 8l0 4l2 2" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>Недавние продукты</div>
+      <div class="history-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8l0 4l2 2" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>
+        <span>Недавние продукты</span>
+      </div>
       <div class="history-empty">Здесь будут появляться макароны, которые вы искали</div>
     `;
     return;
@@ -166,18 +192,20 @@ function renderHistory() {
 
   historySection.innerHTML = `
     <div class="history-title">
-      <span> <div class="history-title"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-history"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 8l0 4l2 2" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>Недавние продукты</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8l0 4l2 2" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>
+      <span>Недавние продукты</span>
       <button class="history-clear" id="clearHistoryBtn">Очистить</button>
     </div>
     <div class="history-list">
       ${productHistory
         .map(
           (p) => `
-        <div class="history-item" data-name="${p.name}" data-kcal="${
-            p.kcal
-          }" data-protein="${p.protein}" data-fat="${p.fat}" data-carbs="${
-            p.carbs
-          }" data-barcode="${p.barcode || ""}">
+        <div class="history-item" data-name="${p.name.replace(
+          /"/g,
+          "&quot;"
+        )}" data-kcal="${p.kcal}" data-protein="${p.protein}" data-fat="${
+            p.fat
+          }" data-carbs="${p.carbs}" data-barcode="${p.barcode || ""}">
           <div class="history-item-name">${
             p.name.length > 20 ? p.name.slice(0, 18) + "..." : p.name
           }</div>
@@ -257,7 +285,7 @@ function calculate() {
   )}г жир  |  ${carbsPortion.toFixed(1)}г угл`;
 }
 
-// ---- КОПИРОВАНИЕ (с тостом) ----
+// ---- КОПИРОВАНИЕ ----
 function copyResult() {
   let val = dryPortionResult.innerText;
   if (!val || val === "--" || val === "Ошибка") {
@@ -273,11 +301,12 @@ function copyResult() {
 async function fetchProductByBarcode(barcode) {
   const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
   try {
+    showToast("Поиск продукта...");
     const response = await fetch(url, {
       headers: { "User-Agent": "MacroCalc/2.0 (support@macrocalc.ru)" },
     });
     const data = await response.json();
-    if (data.status === 1) {
+    if (data.status === 1 && data.product) {
       const p = data.product;
       const nut = p.nutriments;
       let kcal = nut["energy-kcal_100g"] || nut["energy_100g"] || 350;
@@ -298,10 +327,11 @@ async function fetchProductByBarcode(barcode) {
       showToast(`Найден: ${currentProduct.name}`);
       return true;
     } else {
-      showToast("Штрихкод не найден в базе", true);
+      showToast(`Штрихкод ${barcode} не найден в базе`, true);
       return false;
     }
   } catch (e) {
+    console.error("Ошибка API:", e);
     showToast("Ошибка соединения с сервером", true);
     return false;
   }
@@ -352,62 +382,49 @@ async function searchProduct(query) {
         "<div style='padding:16px;color:#858585;text-align:center'>Ничего не найдено. Создайте свой продукт.</div>";
     }
   } catch (err) {
+    console.error("Ошибка поиска:", err);
     searchResultsDiv.innerHTML =
       "<div style='padding:16px;color:#858585'>Ошибка поиска</div>";
   }
 }
 
-// ---- КАСТОМНЫЙ DIALOG ДЛЯ СОЗДАНИЯ ПРОДУКТА ----
-async function showCustomProductDialog() {
-  const result = await showCustomDialog({
-    title: "Создать свой продукт",
-    fields: [
-      { name: "name", placeholder: "Название", default: "Мои макароны" },
-      { name: "kcal", placeholder: "Калорийность на 100 г", default: "350" },
-      { name: "protein", placeholder: "Белки на 100 г", default: "12" },
-      { name: "fat", placeholder: "Жиры на 100 г", default: "1.5" },
-      { name: "carbs", placeholder: "Углеводы на 100 г", default: "70" },
-    ],
-    confirmText: "Сохранить",
-  });
-
-  if (result && result.name) {
-    const kcal = parseFloat(result.kcal);
-    const protein = parseFloat(result.protein);
-    const fat = parseFloat(result.fat);
-    const carbs = parseFloat(result.carbs);
-    if (!isNaN(kcal) && !isNaN(protein) && !isNaN(fat) && !isNaN(carbs)) {
-      currentProduct = {
-        name: result.name,
-        kcal: kcal,
-        protein: protein,
-        fat: fat,
-        carbs: carbs,
-        barcode: null,
-      };
-      updateProductUI();
-      calculate();
-      addToHistory(currentProduct);
-      showToast(`Создан: ${currentProduct.name}`);
-    } else {
-      showToast("Введите корректные числа", true);
-    }
+// ---- СОЗДАНИЕ ПРОДУКТА (через кастомный диалог) ----
+async function handleCreateProduct() {
+  const result = await showCustomProductDialog();
+  if (result) {
+    currentProduct = {
+      name: result.name,
+      kcal: result.kcal,
+      protein: result.protein,
+      fat: result.fat,
+      carbs: result.carbs,
+      barcode: null,
+    };
+    updateProductUI();
+    calculate();
+    addToHistory(currentProduct);
+    showToast(`Создан: ${currentProduct.name}`);
   }
 }
 
-// ---- СКАНЕР С ФОКУСИРОВКОЙ ПО ТАПУ ----
-function startScanner() {
+// ---- СКАНЕР (ПЕРЕРАБОТАН) ----
+async function startScanner() {
+  if (!isModalOpen) return;
+
   modalTitle.innerText = "Сканирование штрихкода";
   scannerContainer.style.display = "block";
   searchInput.style.display = "none";
   searchResultsDiv.style.display = "none";
+  scannerContainer.innerHTML = "";
 
   if (html5QrCode) {
-    html5QrCode.stop().catch(() => {});
-    html5QrCode.clear();
+    try {
+      await html5QrCode.stop();
+      await html5QrCode.clear();
+    } catch (e) {}
+    html5QrCode = null;
   }
 
-  scannerContainer.innerHTML = "";
   html5QrCode = new Html5Qrcode("scannerContainer");
 
   const config = {
@@ -416,48 +433,37 @@ function startScanner() {
     aspectRatio: 1.333,
   };
 
-  html5QrCode
-    .start({ facingMode: "environment" }, config, (decodedText) => {
-      // Успешное сканирование
-      html5QrCode
-        .stop()
-        .then(() => {
-          closeModal();
-          fetchProductByBarcode(decodedText);
-        })
-        .catch(() => {
-          closeModal();
-          fetchProductByBarcode(decodedText);
-        });
-    })
-    .catch((err) => {
-      console.error("Ошибка запуска камеры:", err);
-      showToast("Не удалось запустить камеру", true);
-      closeModal();
-    });
-
-  // Добавляем возможность фокусировки по тапу (через CSS и атрибуты)
-  setTimeout(() => {
-    const videoEl = document.querySelector("#scannerContainer video");
-    if (videoEl) {
-      videoEl.style.cursor = "pointer";
-      videoEl.addEventListener(
-        "click",
-        () => {
-          if (html5QrCode && html5QrCode.isScanning) {
-            showToast(
-              "Нажмите на экране для фокусировки (поддерживается браузером)"
-            );
+  try {
+    await html5QrCode.start(
+      { facingMode: "environment" },
+      config,
+      async (decodedText) => {
+        // Успешное сканирование
+        console.log("Отсканирован код:", decodedText);
+        try {
+          if (html5QrCode) {
+            await html5QrCode.stop();
+            await html5QrCode.clear();
           }
-        },
-        { once: false }
-      );
-    }
-  }, 500);
+        } catch (e) {}
+        closeModal();
+        await fetchProductByBarcode(decodedText);
+      },
+      (error) => {
+        // Ошибки сканирования игнорируем (это нормально, кадры просто не читаются)
+        if (error && error.includes("NotFoundException")) return;
+      }
+    );
+  } catch (err) {
+    console.error("Ошибка запуска камеры:", err);
+    showToast("Не удалось запустить камеру. Проверьте разрешения.", true);
+    closeModal();
+  }
 }
 
 // ---- ОТКРЫТИЕ ПОИСКА ----
 function openSearchModal() {
+  isModalOpen = true;
   modalTitle.innerText = "Поиск продукта";
   scannerContainer.style.display = "none";
   searchInput.style.display = "block";
@@ -473,6 +479,7 @@ function openSearchModal() {
 
 // ---- ОТКРЫТИЕ СКАНЕРА ----
 function openScannerModal() {
+  isModalOpen = true;
   modalTitle.innerText = "Сканер штрихкода";
   scannerContainer.style.display = "block";
   searchInput.style.display = "none";
@@ -481,16 +488,27 @@ function openScannerModal() {
     html5QrCode.stop().catch(() => {});
   }
   modal.style.display = "flex";
-  setTimeout(() => startScanner(), 100);
+  // Небольшая задержка для рендеринга модалки
+  setTimeout(() => {
+    if (modal.style.display === "flex") {
+      startScanner();
+    }
+  }, 300);
 }
 
 // ---- ЗАКРЫТИЕ МОДАЛКИ ----
-function closeModal() {
+async function closeModal() {
+  isModalOpen = false;
   modal.style.display = "none";
   if (html5QrCode) {
-    html5QrCode.stop().catch(() => {});
+    try {
+      await html5QrCode.stop();
+      await html5QrCode.clear();
+    } catch (e) {}
+    html5QrCode = null;
   }
   scannerContainer.style.display = "none";
+  scannerContainer.innerHTML = "";
 }
 
 // ---- ИНИЦИАЛИЗАЦИЯ ----
@@ -499,7 +517,7 @@ copyBtn.onclick = copyResult;
 scanBarcodeBtn.onclick = openScannerModal;
 searchProductBtn.onclick = openSearchModal;
 closeModalBtn.onclick = closeModal;
-document.getElementById("editProductBtn").onclick = showCustomProductDialog;
+document.getElementById("editProductBtn").onclick = handleCreateProduct;
 
 loadHistory();
 updateProductUI();
