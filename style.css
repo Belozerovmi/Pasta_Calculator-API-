@@ -400,7 +400,7 @@ h1 {
 }
 .custom-dialog {
   background: white;
-  border-radius: 32px;
+  border-radius: 25px;
   padding: 24px;
   width: 320px;
   max-width: 85%;
@@ -417,10 +417,12 @@ h1 {
   border-radius: 20px;
   background: #f6f8f4;
   font-size: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 .custom-dialog-buttons {
+  margin-top: 10px;
   display: flex;
+  flex-direction: column-reverse;
   gap: 12px;
 }
 .custom-dialog-buttons button {
@@ -454,7 +456,7 @@ h1 {
 }
 /* Дополнительные стили для диалога создания продукта */
 .dialog-field {
-  margin-bottom: 16px;
+  margin-bottom: 0px;
 }
 .dialog-field label {
   display: block;
