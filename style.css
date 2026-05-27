@@ -513,7 +513,6 @@ h1 {
   padding: 6px;
   line-height: 1;
   border-radius: 30px;
-  font-weight: 600;
 }
 .custom-dialog-close:active {
   background: #f0f0f0;
