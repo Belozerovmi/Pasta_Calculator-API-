@@ -1,7 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
   <head>
     <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="192x192" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="512x512" href="favicon.ico" />
     <meta charset="UTF-8" />
     <meta
       name="viewport"
@@ -263,6 +267,35 @@
         </div>
       </div>
     </footer>
+
+    <!-- Регистрация Service Worker для PWA -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((registration) => {
+              console.log(
+                "Service Worker зарегистрирован:",
+                registration.scope,
+              );
+            })
+            .catch((error) => {
+              console.log("Ошибка регистрации Service Worker:", error);
+            });
+        });
+      }
+
+      // Обработка параметра action=scan для быстрого запуска сканера
+      if (window.location.search.includes("action=scan")) {
+        window.addEventListener("load", () => {
+          setTimeout(() => {
+            const scanBtn = document.getElementById("scanBarcodeBtn");
+            if (scanBtn) scanBtn.click();
+          }, 500);
+        });
+      }
+    </script>
 
     <script src="script.js" defer></script>
   </body>
