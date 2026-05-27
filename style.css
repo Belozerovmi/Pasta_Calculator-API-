@@ -365,10 +365,10 @@ h1 {
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background: #1e4c28;
-  color: #1e2d4c;
+  background: #2e5a4b;
+  color: #fff;
   padding: 12px 24px;
-  border-radius: 12px;
+  border-radius: 60px;
   font-size: 15px;
   font-weight: 500;
   z-index: 1100;

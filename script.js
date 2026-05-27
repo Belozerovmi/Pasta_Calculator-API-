@@ -45,7 +45,7 @@ function showToast(message, isError = false) {
     document.body.appendChild(toast);
   }
   toast.textContent = message;
-  toast.style.background = isError ? "#c0392b" : "#acbdaa";
+  toast.style.background = isError ? "#c0392b" : "#2E5A4B";
   toast.classList.add("show");
   setTimeout(() => {
     toast.classList.remove("show");
