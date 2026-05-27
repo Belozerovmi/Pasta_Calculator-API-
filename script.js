@@ -372,7 +372,7 @@ function copyResultFromModal() {
 
 // ---- ПОЛУЧЕНИЕ ПРОДУКТА ПО ШТРИХКОДУ (С ИНДИКАТОРОМ) ----
 async function fetchProductByBarcode(barcode) {
-  const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
+  const url = `https://ru.openfoodfacts.org/api/v0/product/${barcode}.json`;
   try {
     const response = await fetch(url, {
       headers: { "User-Agent": "MacroCalc/2.0 (support@macrocalc.ru)" },
