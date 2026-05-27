@@ -1,105 +1,37 @@
 {
-  "name": "MacroCalc — Калькулятор порций",
-  "short_name": "MacroCalc",
-  "description": "Рассчитайте вес сухих макарон в порции по готовому блюду",
-  "start_url": "/index.html",
-  "display": "standalone",
-  "theme_color": "#1e2d4c",
   "background_color": "#ffffff",
-  "orientation": "portrait",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "pasta-calculator-api.vercel",
+  "orientation": "any",
   "scope": "/",
+  "short_name": "pasta-calculator-api.vercel",
+  "start_url": "/",
+  "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "icons/icon-72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "https://pasta-calculator-api.vercel.app/favicon.ico",
+      "type": "image/x-icon",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
     },
     {
-      "src": "icons/icon-96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "https://pasta-calculator-api.vercel.app/favicon.ico",
+      "type": "image/x-icon",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
     }
-  ],
-  "shortcuts": [
-    {
-      "name": "Рассчитать",
-      "short_name": "Расчёт",
-      "description": "Быстрый расчёт порции",
-      "url": "/index.html",
-      "icons": [
-        {
-          "src": "icons/icon-96.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Сканер штрихкода",
-      "short_name": "Сканер",
-      "description": "Отсканировать штрихкод продукта",
-      "url": "/index.html?action=scan",
-      "icons": [
-        {
-          "src": "icons/icon-96.png",
-          "sizes": "96x96"
-        }
-      ]
-    }
-  ],
-  "categories": ["food", "health", "lifestyle"],
-  "screenshots": [
-    {
-      "src": "screenshots/screenshot1.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Главный экран калькулятора"
-    },
-    {
-      "src": "screenshots/screenshot2.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Результат расчёта"
-    }
-  ],
-  "prefer_related_applications": false
+  ]
 }
