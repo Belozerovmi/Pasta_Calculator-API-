@@ -589,3 +589,39 @@ h1 {
   width: 42px;
   height: 42px;
 }
+/* ===== LOADERS FOR MODALS ===== */
+.modal-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+}
+.loader-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e7dd;
+  border-top-color: #1e2d4c;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.loader-text {
+  font-size: 14px;
+  color: #858585;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-loader {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}

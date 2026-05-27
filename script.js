@@ -35,6 +35,44 @@ const modalCopyBtn = document.getElementById("modalCopyBtn");
 
 let html5QrCode = null;
 let isModalOpen = false;
+let isProcessing = false; // для блокировки повторных действий
+
+// ---- ПОКАЗАТЬ/СКРЫТЬ ИНДИКАТОР ЗАГРУЗКИ В МОДАЛКЕ ----
+function showModalLoading(show, isSearch = true) {
+  let existingLoader = document.querySelector(".modal-loader");
+  if (show) {
+    if (existingLoader) existingLoader.remove();
+    const loader = document.createElement("div");
+    loader.className = "modal-loader";
+    loader.innerHTML = `
+      <div class="loader-spinner"></div>
+      <div class="loader-text">${
+        isSearch ? "Поиск..." : "Сканирование..."
+      }</div>
+    `;
+    if (isSearch) {
+      searchResultsDiv.innerHTML = "";
+      searchResultsDiv.appendChild(loader);
+    } else {
+      scannerContainer.innerHTML = "";
+      scannerContainer.appendChild(loader);
+    }
+  } else {
+    if (existingLoader) existingLoader.remove();
+  }
+}
+
+// ---- ПОКАЗАТЬ ИНДИКАТОР НА ГЛАВНОЙ КНОПКЕ ----
+function setButtonLoading(button, isLoading) {
+  if (isLoading) {
+    button.dataset.originalText = button.innerHTML;
+    button.innerHTML = `<div class="btn-loader"></div> Загрузка...`;
+    button.disabled = true;
+  } else {
+    button.innerHTML = button.dataset.originalText;
+    button.disabled = false;
+  }
+}
 
 // ---- TOAST УВЕДОМЛЕНИЯ ----
 function showToast(message, isError = false) {
@@ -52,7 +90,7 @@ function showToast(message, isError = false) {
   }, 2500);
 }
 
-// ---- ЗАКРЫТИЕ МОДАЛКИ РЕЗУЛЬТАТА (крестик + тап по фону + свайп) ----
+// ---- ЗАКРЫТИЕ МОДАЛКИ РЕЗУЛЬТАТА ----
 function closeResultModal() {
   resultModal.style.display = "none";
 }
@@ -69,13 +107,12 @@ resultModal.addEventListener("touchstart", (e) => {
 });
 resultModal.addEventListener("touchmove", (e) => {
   const deltaY = e.touches[0].clientY - touchStartY;
-  if (deltaY > 50) {
-    closeResultModal();
-  }
+  if (deltaY > 50) closeResultModal();
 });
 
-// ---- ЗАКРЫТИЕ ОСНОВНОЙ МОДАЛКИ (поиск/сканер) ----
+// ---- ЗАКРЫТИЕ ОСНОВНОЙ МОДАЛКИ ----
 function closeMainModal() {
+  if (isProcessing) return;
   isModalOpen = false;
   modal.style.display = "none";
   if (html5QrCode) {
@@ -84,9 +121,11 @@ function closeMainModal() {
   }
   scannerContainer.style.display = "none";
   scannerContainer.innerHTML = "";
+  searchResultsDiv.innerHTML = "";
+  searchInput.value = "";
 }
 
-// ---- КАСТОМНЫЙ DIALOG ДЛЯ СОЗДАНИЯ ПРОДУКТА (с крестиком и тапом по фону) ----
+// ---- КАСТОМНЫЙ DIALOG ДЛЯ СОЗДАНИЯ ПРОДУКТА ----
 function showCustomProductDialog() {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
@@ -161,7 +200,7 @@ function showCustomProductDialog() {
   });
 }
 
-// ---- ЗАГРУЗКА ИСТОРИИ ИЗ LOCALSTORAGE ----
+// ---- ЗАГРУЗКА ИСТОРИИ ----
 function loadHistory() {
   const saved = localStorage.getItem("macrocalc_history");
   if (saved) {
@@ -172,7 +211,6 @@ function loadHistory() {
   }
 }
 
-// ---- СОХРАНЕНИЕ ИСТОРИИ ----
 function saveHistory() {
   localStorage.setItem(
     "macrocalc_history",
@@ -180,7 +218,6 @@ function saveHistory() {
   );
 }
 
-// ---- ДОБАВЛЕНИЕ ПРОДУКТА В ИСТОРИЮ ----
 function addToHistory(product) {
   const index = productHistory.findIndex(
     (p) => p.name === product.name && p.kcal === product.kcal
@@ -199,7 +236,6 @@ function addToHistory(product) {
   renderHistory();
 }
 
-// ---- ОТРИСОВКА ИСТОРИИ ----
 function renderHistory() {
   let historySection = document.querySelector(".history-section");
   const container = document.querySelector(".container");
@@ -280,7 +316,6 @@ function renderHistory() {
   }
 }
 
-// ---- ОБНОВЛЕНИЕ UI ПРОДУКТА ----
 function updateProductUI() {
   productNameEl.innerText = currentProduct.name;
   kcalVal.innerText = Math.round(currentProduct.kcal);
@@ -289,7 +324,6 @@ function updateProductUI() {
   carbsVal.innerText = currentProduct.carbs.toFixed(1);
 }
 
-// ---- РАСЧЁТ С МОДАЛЬНЫМ ОКНОМ ----
 function calculate() {
   let dry = parseFloat(dryTotal.value);
   let cooked = parseFloat(cookedTotal.value);
@@ -325,7 +359,6 @@ function calculate() {
   resultModal.style.display = "flex";
 }
 
-// ---- КОПИРОВАНИЕ ИЗ МОДАЛКИ ----
 function copyResultFromModal() {
   let val = modalDryPortion.innerText;
   if (!val || val === "--") {
@@ -337,11 +370,10 @@ function copyResultFromModal() {
   closeResultModal();
 }
 
-// ---- ПОЛУЧЕНИЕ ПРОДУКТА ПО ШТРИХКОДУ ----
+// ---- ПОЛУЧЕНИЕ ПРОДУКТА ПО ШТРИХКОДУ (С ИНДИКАТОРОМ) ----
 async function fetchProductByBarcode(barcode) {
   const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
   try {
-    showToast("Поиск продукта...");
     const response = await fetch(url, {
       headers: { "User-Agent": "MacroCalc/2.0 (support@macrocalc.ru)" },
     });
@@ -377,9 +409,10 @@ async function fetchProductByBarcode(barcode) {
   }
 }
 
-// ---- ПОИСК ПРОДУКТА ----
+// ---- ПОИСК ПРОДУКТА (С ИНДИКАТОРОМ) ----
 async function searchProduct(query) {
   if (query.length < 2) return;
+  showModalLoading(true, true);
   const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
     query
   )}&search_simple=1&action=process&json=1&page_size=20`;
@@ -388,6 +421,7 @@ async function searchProduct(query) {
       headers: { "User-Agent": "MacroCalc/2.0" },
     });
     const data = await resp.json();
+    showModalLoading(false, true);
     searchResultsDiv.innerHTML = "";
     if (data.products && data.products.length) {
       data.products.forEach((prod) => {
@@ -423,12 +457,12 @@ async function searchProduct(query) {
     }
   } catch (err) {
     console.error("Ошибка поиска:", err);
+    showModalLoading(false, true);
     searchResultsDiv.innerHTML =
       "<div style='padding:16px;color:#858585'>Ошибка поиска</div>";
   }
 }
 
-// ---- СОЗДАНИЕ ПРОДУКТА (через кастомный диалог) ----
 async function handleCreateProduct() {
   const result = await showCustomProductDialog();
   if (result) {
@@ -447,15 +481,17 @@ async function handleCreateProduct() {
   }
 }
 
-// ---- СКАНЕР ----
+// ---- СКАНЕР (ПОЛНОСТЬЮ ПЕРЕРАБОТАН) ----
 async function startScanner() {
-  if (!isModalOpen) return;
+  if (!isModalOpen || isProcessing) return;
 
+  isProcessing = true;
   modalTitle.innerText = "Сканирование штрихкода";
   scannerContainer.style.display = "block";
   searchInput.style.display = "none";
   searchResultsDiv.style.display = "none";
   scannerContainer.innerHTML = "";
+  showModalLoading(true, false);
 
   if (html5QrCode) {
     try {
@@ -478,30 +514,47 @@ async function startScanner() {
       { facingMode: "environment" },
       config,
       async (decodedText) => {
-        console.log("Отсканирован код:", decodedText);
-        try {
-          if (html5QrCode) {
+        // Сразу отключаем сканер, чтобы не было повторных срабатываний
+        if (html5QrCode) {
+          try {
             await html5QrCode.stop();
             await html5QrCode.clear();
-          }
-        } catch (e) {}
+          } catch (e) {}
+          html5QrCode = null;
+        }
+
+        // Показываем индикатор загрузки вместо видео
+        showModalLoading(true, false);
+
+        // Закрываем модалку ТОЛЬКО после успешного ответа от API
+        const success = await fetchProductByBarcode(decodedText);
+
+        // Убираем индикатор и закрываем
+        showModalLoading(false, false);
         closeMainModal();
-        await fetchProductByBarcode(decodedText);
+        isProcessing = false;
       },
       (error) => {
+        // Игнорируем ошибки NotFound (кадры без кода)
         if (error && error.includes("NotFoundException")) return;
+        console.warn("Ошибка сканирования:", error);
       }
     );
+    // Убираем индикатор загрузки после успешного старта камеры
+    showModalLoading(false, false);
   } catch (err) {
     console.error("Ошибка запуска камеры:", err);
+    showModalLoading(false, false);
     showToast("Не удалось запустить камеру. Проверьте разрешения.", true);
     closeMainModal();
+    isProcessing = false;
   }
 }
 
-// ---- ОТКРЫТИЕ ПОИСКА ----
 function openSearchModal() {
+  if (isProcessing) return;
   isModalOpen = true;
+  isProcessing = false;
   modalTitle.innerText = "Поиск продукта";
   scannerContainer.style.display = "none";
   searchInput.style.display = "block";
@@ -510,20 +563,23 @@ function openSearchModal() {
   searchResultsDiv.innerHTML = "";
   if (html5QrCode) {
     html5QrCode.stop().catch(() => {});
+    html5QrCode = null;
   }
   searchInput.oninput = (e) => searchProduct(e.target.value);
   modal.style.display = "flex";
 }
 
-// ---- ОТКРЫТИЕ СКАНЕРА ----
 function openScannerModal() {
+  if (isProcessing) return;
   isModalOpen = true;
+  isProcessing = false;
   modalTitle.innerText = "Сканер штрихкода";
   scannerContainer.style.display = "block";
   searchInput.style.display = "none";
   searchResultsDiv.style.display = "none";
   if (html5QrCode) {
     html5QrCode.stop().catch(() => {});
+    html5QrCode = null;
   }
   modal.style.display = "flex";
   setTimeout(() => {
@@ -541,16 +597,14 @@ document.getElementById("editProductBtn").onclick = handleCreateProduct;
 
 modalCopyBtn.onclick = copyResultFromModal;
 
-// Закрытие модалок по крестику
 document.getElementById("resultModalCloseX").onclick = closeResultModal;
 document.getElementById("mainModalCloseX").onclick = closeMainModal;
 
-// Закрытие по клику на фон
 resultModal.onclick = (e) => {
   if (e.target === resultModal) closeResultModal();
 };
 modal.onclick = (e) => {
-  if (e.target === modal) closeMainModal();
+  if (e.target === modal && !isProcessing) closeMainModal();
 };
 
 loadHistory();
