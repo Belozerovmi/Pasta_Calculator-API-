@@ -32,6 +32,11 @@ const searchInput = document.getElementById("searchInput");
 const searchResultsDiv = document.getElementById("searchResults");
 const scannerContainer = document.getElementById("scannerContainer");
 const closeModalBtn = document.getElementById("closeModal");
+const resultModal = document.getElementById("resultModal");
+const modalDryPortion = document.getElementById("modalDryPortion");
+const modalKbju = document.getElementById("modalKbju");
+const modalCopyBtn = document.getElementById("modalCopyBtn");
+const modalCloseBtn = document.getElementById("modalCloseBtn");
 
 let html5QrCode = null;
 let isModalOpen = false;
@@ -254,6 +259,7 @@ function updateProductUI() {
 }
 
 // ---- РАСЧЁТ ----
+// ---- РАСЧЁТ С МОДАЛЬНЫМ ОКНОМ ----
 function calculate() {
   let dry = parseFloat(dryTotal.value);
   let cooked = parseFloat(cookedTotal.value);
@@ -266,36 +272,77 @@ function calculate() {
     cooked <= 0 ||
     portion <= 0
   ) {
-    dryPortionResult.innerText = "Ошибка";
-    caloriesResult.innerText = "Заполните все поля (>0)";
+    showToast("Заполните все поля (>0)", true);
     return;
   }
   let dryPortion = (portion * dry) / cooked;
   dryPortion = Math.round(dryPortion * 10) / 10;
-  dryPortionResult.innerText = dryPortion + " г";
 
   let kcalPortion = (currentProduct.kcal * dryPortion) / 100;
   let proteinPortion = (currentProduct.protein * dryPortion) / 100;
   let fatPortion = (currentProduct.fat * dryPortion) / 100;
   let carbsPortion = (currentProduct.carbs * dryPortion) / 100;
-  caloriesResult.innerHTML = `${Math.round(
+
+  // Обновляем модальное окно
+  modalDryPortion.innerText = dryPortion;
+  modalKbju.innerHTML = `${Math.round(
     kcalPortion
-  )} ккал  |  ${proteinPortion.toFixed(1)}г бел  |  ${fatPortion.toFixed(
+  )} ккал &nbsp;|&nbsp; ${proteinPortion.toFixed(
     1
-  )}г жир  |  ${carbsPortion.toFixed(1)}г угл`;
+  )}г бел &nbsp;|&nbsp; ${fatPortion.toFixed(
+    1
+  )}г жир &nbsp;|&nbsp; ${carbsPortion.toFixed(1)}г угл`;
+
+  // Показываем модальное окно
+  resultModal.style.display = "flex";
 }
 
 // ---- КОПИРОВАНИЕ ----
-function copyResult() {
-  let val = dryPortionResult.innerText;
-  if (!val || val === "--" || val === "Ошибка") {
-    showToast("Сначала рассчитайте порцию", true);
+// function copyResult() {
+//   let val = dryPortionResult.innerText;
+//   if (!val || val === "--" || val === "Ошибка") {
+//     showToast("Сначала рассчитайте порцию", true);
+//     return;
+//   }
+//   let numeric = val.replace(" г", "");
+//   navigator.clipboard.writeText(numeric);
+//   showToast(`Скопировано: ${numeric} г`);
+// }
+// ---- КОПИРОВАНИЕ ИЗ МОДАЛКИ ----
+function copyResultFromModal() {
+  let val = modalDryPortion.innerText;
+  if (!val || val === "--") {
+    showToast("Ошибка", true);
     return;
   }
-  let numeric = val.replace(" г", "");
-  navigator.clipboard.writeText(numeric);
-  showToast(`Скопировано: ${numeric} г`);
+  navigator.clipboard.writeText(val);
+  showToast(`Скопировано: ${val} г`);
+  resultModal.style.display = "none";
 }
+
+// ---- ЗАКРЫТИЕ МОДАЛКИ РЕЗУЛЬТАТА ----
+function closeResultModal() {
+  resultModal.style.display = "none";
+}
+
+// ---- ИНИЦИАЛИЗАЦИЯ (замените существующую) ----
+calcBtn.onclick = calculate;
+scanBarcodeBtn.onclick = openScannerModal;
+searchProductBtn.onclick = openSearchModal;
+closeModalBtn.onclick = closeModal;
+document.getElementById("editProductBtn").onclick = handleCreateProduct;
+
+// Модалка результата
+modalCopyBtn.onclick = copyResultFromModal;
+modalCloseBtn.onclick = closeResultModal;
+// Закрытие по клику вне области
+resultModal.onclick = (e) => {
+  if (e.target === resultModal) closeResultModal();
+};
+
+loadHistory();
+updateProductUI();
+// Не вызываем calculate() автоматически, ждём нажатия кнопки
 
 // ---- ПОЛУЧЕНИЕ ПРОДУКТА ПО ШТРИХКОДУ ----
 async function fetchProductByBarcode(barcode) {

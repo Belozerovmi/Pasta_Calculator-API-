@@ -82,6 +82,7 @@ h1 {
   padding: 14px 12px;
   border-radius: 24px;
   margin-top: 8px;
+  border: 1px solid #e2e7dd;
 }
 .nutrient {
   text-align: center;
@@ -362,9 +363,12 @@ h1 {
 .toast {
   display: flex;
   position: fixed;
-  bottom: 30px;
+  /* bottom: 30px; - вариант для выезда снизу */
+  /* transform: translateX(-50%) translateY(100px); - вариант для выезда снизу  */
+  top: 20px;
+  transform: translateX(-50%) translateY(-100px);
   left: 50%;
-  transform: translateX(-50%) translateY(100px);
+
   background: #2e5a4b;
   color: #fff;
   padding: 12px 24px;
@@ -493,4 +497,119 @@ h1 {
 .dialog-field input:focus {
   outline: none;
   border-color: #acbdaa;
+}
+
+/* ===== RESULT MODAL (новый стиль) ===== */
+.result-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  backdrop-filter: blur(4px);
+}
+.result-modal-content {
+  background: white;
+  max-width: 320px;
+  width: 85%;
+  border-radius: 48px;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.3);
+  animation: modalFadeIn 0.3s ease-in-out;
+}
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.result-modal-icon {
+  width: 56px;
+  height: 56px;
+  background: #acbdaa;
+  border-radius: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.result-modal-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke: #1e2d4c;
+  stroke-width: 1.5;
+}
+.result-modal-label {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: #858585;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.result-modal-value {
+  font-size: 56px;
+  font-weight: 800;
+  color: #1e2d4c;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+.result-modal-unit {
+  font-size: 20px;
+  font-weight: 500;
+  color: #858585;
+}
+.result-modal-kbju {
+  font-size: 13px;
+  color: #858585;
+  margin: 16px 0 24px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e7dd;
+}
+.result-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.result-modal-btn {
+  border: none;
+  padding: 14px 20px;
+  border-radius: 44px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  width: 100%;
+}
+.result-modal-btn-primary {
+  background: #1e2d4c;
+  color: white;
+}
+.result-modal-btn-primary:active {
+  background: #0f1a2e;
+  transform: scale(0.97);
+}
+.result-modal-btn-secondary {
+  background: transparent;
+  border: 1.5px solid #acbdaa;
+  color: #1e2d4c;
+}
+.result-modal-btn-secondary:active {
+  background: #f6f8f4;
+  transform: scale(0.97);
+}
+
+/* Скрываем старый result-card */
+.result-card {
+  display: none;
 }
