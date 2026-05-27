@@ -40,7 +40,6 @@
                 d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
               />
             </svg>
-            <!-- <span>Изменить</span> -->
           </button>
         </div>
         <div class="nutrients" id="nutrientsPanel">
@@ -156,30 +155,10 @@
         </button>
       </div>
 
-      <!-- <div class="result-card" id="resultBlock">
-        <div class="result-label">СУХИХ МАКАРОН В ВАШЕЙ ПОРЦИИ</div>
-        <div class="result-value" id="dryPortionResult">--</div>
-        <div class="result-sub" id="caloriesResult"></div>
-        <button id="copyBtn" class="copy-inline">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-          >
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path
-              d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-            ></path>
-          </svg>
-          Скопировать вес (г)
-        </button>
-      </div> -->
-      <!-- Модальное окно результата (вместо result-card) -->
+      <!-- Модальное окно результата -->
       <div id="resultModal" class="result-modal">
         <div class="result-modal-content">
+          <button class="result-modal-close" id="resultModalCloseX">✕</button>
           <div class="result-modal-icon">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -226,20 +205,15 @@
               </svg>
               Скопировать вес
             </button>
-            <button
-              id="modalCloseBtn"
-              class="result-modal-btn result-modal-btn-secondary"
-            >
-              Закрыть
-            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Модальное окно -->
+    <!-- Модальное окно поиска/сканера -->
     <div id="modal" class="modal">
       <div class="modal-content">
+        <button class="modal-close" id="mainModalCloseX">✕</button>
         <h3 id="modalTitle">Поиск продукта</h3>
         <input
           type="text"
@@ -249,7 +223,6 @@
         />
         <div id="searchResults" class="search-results"></div>
         <div id="scannerContainer" style="display: none"></div>
-        <button id="closeModal" class="btn close-modal">Закрыть</button>
       </div>
     </div>
 

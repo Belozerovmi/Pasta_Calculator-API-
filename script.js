@@ -20,9 +20,6 @@ const carbsVal = document.getElementById("carbsVal");
 const dryTotal = document.getElementById("dryTotal");
 const cookedTotal = document.getElementById("cookedTotal");
 const portionCooked = document.getElementById("portionCooked");
-const dryPortionResult = document.getElementById("dryPortionResult");
-const caloriesResult = document.getElementById("caloriesResult");
-const copyBtn = document.getElementById("copyBtn");
 const calcBtn = document.getElementById("calcBtn");
 const scanBarcodeBtn = document.getElementById("scanBarcodeBtn");
 const searchProductBtn = document.getElementById("searchProductBtn");
@@ -31,12 +28,10 @@ const modalTitle = document.getElementById("modalTitle");
 const searchInput = document.getElementById("searchInput");
 const searchResultsDiv = document.getElementById("searchResults");
 const scannerContainer = document.getElementById("scannerContainer");
-const closeModalBtn = document.getElementById("closeModal");
 const resultModal = document.getElementById("resultModal");
 const modalDryPortion = document.getElementById("modalDryPortion");
 const modalKbju = document.getElementById("modalKbju");
 const modalCopyBtn = document.getElementById("modalCopyBtn");
-const modalCloseBtn = document.getElementById("modalCloseBtn");
 
 let html5QrCode = null;
 let isModalOpen = false;
@@ -50,20 +45,55 @@ function showToast(message, isError = false) {
     document.body.appendChild(toast);
   }
   toast.textContent = message;
-  toast.style.background = isError ? "#c0392b" : "#2E5A4B";
+  toast.style.background = isError ? "#b4656d" : "#2e5a4b";
   toast.classList.add("show");
   setTimeout(() => {
     toast.classList.remove("show");
   }, 2500);
 }
 
-// ---- КАСТОМНЫЙ DIALOG ДЛЯ СОЗДАНИЯ ПРОДУКТА (с подписями) ----
+// ---- ЗАКРЫТИЕ МОДАЛКИ РЕЗУЛЬТАТА (крестик + тап по фону + свайп) ----
+function closeResultModal() {
+  resultModal.style.display = "none";
+}
+
+// Свайп вниз для закрытия модалки результата
+let touchStartY = 0;
+resultModal.addEventListener("touchstart", (e) => {
+  if (
+    e.target === resultModal ||
+    e.target.closest(".result-modal-content") === null
+  )
+    return;
+  touchStartY = e.touches[0].clientY;
+});
+resultModal.addEventListener("touchmove", (e) => {
+  const deltaY = e.touches[0].clientY - touchStartY;
+  if (deltaY > 50) {
+    closeResultModal();
+  }
+});
+
+// ---- ЗАКРЫТИЕ ОСНОВНОЙ МОДАЛКИ (поиск/сканер) ----
+function closeMainModal() {
+  isModalOpen = false;
+  modal.style.display = "none";
+  if (html5QrCode) {
+    html5QrCode.stop().catch(() => {});
+    html5QrCode = null;
+  }
+  scannerContainer.style.display = "none";
+  scannerContainer.innerHTML = "";
+}
+
+// ---- КАСТОМНЫЙ DIALOG ДЛЯ СОЗДАНИЯ ПРОДУКТА (с крестиком и тапом по фону) ----
 function showCustomProductDialog() {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "custom-dialog-overlay";
     overlay.innerHTML = `
       <div class="custom-dialog">
+        <button class="custom-dialog-close">✕</button>
         <h4>Создать свой продукт</h4>
         <div class="dialog-field">
           <label>Название продукта</label>
@@ -86,17 +116,29 @@ function showCustomProductDialog() {
           <input type="number" id="dialog_carbs" placeholder="70" value="70" step="0.1">
         </div>
         <div class="custom-dialog-buttons">
-          <button class="dialog-cancel">Отмена</button>
           <button class="dialog-confirm">Сохранить</button>
+          <button class="dialog-cancel">Отмена</button>
         </div>
       </div>
     `;
     document.body.appendChild(overlay);
 
+    const closeBtn = overlay.querySelector(".custom-dialog-close");
     const confirmBtn = overlay.querySelector(".dialog-confirm");
     const cancelBtn = overlay.querySelector(".dialog-cancel");
 
     const close = () => overlay.remove();
+
+    const resolveAndClose = (result) => {
+      close();
+      resolve(result);
+    };
+
+    closeBtn.onclick = () => resolveAndClose(null);
+    cancelBtn.onclick = () => resolveAndClose(null);
+    overlay.onclick = (e) => {
+      if (e.target === overlay) resolveAndClose(null);
+    };
 
     confirmBtn.onclick = () => {
       const name = document.getElementById("dialog_name").value.trim();
@@ -106,23 +148,15 @@ function showCustomProductDialog() {
       );
       const fat = parseFloat(document.getElementById("dialog_fat").value);
       const carbs = parseFloat(document.getElementById("dialog_carbs").value);
-      close();
       if (!name) {
         showToast("Введите название продукта", true);
-        resolve(null);
         return;
       }
       if (isNaN(kcal) || isNaN(protein) || isNaN(fat) || isNaN(carbs)) {
         showToast("Заполните все поля КБЖУ корректными числами", true);
-        resolve(null);
         return;
       }
-      resolve({ name, kcal, protein, fat, carbs });
-    };
-
-    cancelBtn.onclick = () => {
-      close();
-      resolve(null);
+      resolveAndClose({ name, kcal, protein, fat, carbs });
     };
   });
 }
@@ -151,9 +185,7 @@ function addToHistory(product) {
   const index = productHistory.findIndex(
     (p) => p.name === product.name && p.kcal === product.kcal
   );
-  if (index !== -1) {
-    productHistory.splice(index, 1);
-  }
+  if (index !== -1) productHistory.splice(index, 1);
   productHistory.unshift({
     name: product.name,
     kcal: product.kcal,
@@ -171,14 +203,13 @@ function addToHistory(product) {
 function renderHistory() {
   let historySection = document.querySelector(".history-section");
   const container = document.querySelector(".container");
-  const resultCard = document.querySelector(".result-card");
 
   if (!historySection) {
     historySection = document.createElement("div");
     historySection.className = "history-section";
-    const resultCardEl = document.querySelector(".result-card");
-    if (resultCardEl) {
-      container.insertBefore(historySection, resultCardEl);
+    const actionRow = document.querySelector(".action-row");
+    if (actionRow) {
+      actionRow.insertAdjacentElement("afterend", historySection);
     } else {
       container.appendChild(historySection);
     }
@@ -258,7 +289,6 @@ function updateProductUI() {
   carbsVal.innerText = currentProduct.carbs.toFixed(1);
 }
 
-// ---- РАСЧЁТ ----
 // ---- РАСЧЁТ С МОДАЛЬНЫМ ОКНОМ ----
 function calculate() {
   let dry = parseFloat(dryTotal.value);
@@ -283,7 +313,6 @@ function calculate() {
   let fatPortion = (currentProduct.fat * dryPortion) / 100;
   let carbsPortion = (currentProduct.carbs * dryPortion) / 100;
 
-  // Обновляем модальное окно
   modalDryPortion.innerText = dryPortion;
   modalKbju.innerHTML = `${Math.round(
     kcalPortion
@@ -293,21 +322,9 @@ function calculate() {
     1
   )}г жир &nbsp;|&nbsp; ${carbsPortion.toFixed(1)}г угл`;
 
-  // Показываем модальное окно
   resultModal.style.display = "flex";
 }
 
-// ---- КОПИРОВАНИЕ ----
-// function copyResult() {
-//   let val = dryPortionResult.innerText;
-//   if (!val || val === "--" || val === "Ошибка") {
-//     showToast("Сначала рассчитайте порцию", true);
-//     return;
-//   }
-//   let numeric = val.replace(" г", "");
-//   navigator.clipboard.writeText(numeric);
-//   showToast(`Скопировано: ${numeric} г`);
-// }
 // ---- КОПИРОВАНИЕ ИЗ МОДАЛКИ ----
 function copyResultFromModal() {
   let val = modalDryPortion.innerText;
@@ -317,32 +334,8 @@ function copyResultFromModal() {
   }
   navigator.clipboard.writeText(val);
   showToast(`Скопировано: ${val} г`);
-  resultModal.style.display = "none";
+  closeResultModal();
 }
-
-// ---- ЗАКРЫТИЕ МОДАЛКИ РЕЗУЛЬТАТА ----
-function closeResultModal() {
-  resultModal.style.display = "none";
-}
-
-// ---- ИНИЦИАЛИЗАЦИЯ (замените существующую) ----
-calcBtn.onclick = calculate;
-scanBarcodeBtn.onclick = openScannerModal;
-searchProductBtn.onclick = openSearchModal;
-closeModalBtn.onclick = closeModal;
-document.getElementById("editProductBtn").onclick = handleCreateProduct;
-
-// Модалка результата
-modalCopyBtn.onclick = copyResultFromModal;
-modalCloseBtn.onclick = closeResultModal;
-// Закрытие по клику вне области
-resultModal.onclick = (e) => {
-  if (e.target === resultModal) closeResultModal();
-};
-
-loadHistory();
-updateProductUI();
-// Не вызываем calculate() автоматически, ждём нажатия кнопки
 
 // ---- ПОЛУЧЕНИЕ ПРОДУКТА ПО ШТРИХКОДУ ----
 async function fetchProductByBarcode(barcode) {
@@ -419,7 +412,7 @@ async function searchProduct(query) {
           updateProductUI();
           calculate();
           addToHistory(currentProduct);
-          closeModal();
+          closeMainModal();
           showToast(`Выбран: ${currentProduct.name}`);
         };
         searchResultsDiv.appendChild(div);
@@ -454,7 +447,7 @@ async function handleCreateProduct() {
   }
 }
 
-// ---- СКАНЕР (ПЕРЕРАБОТАН) ----
+// ---- СКАНЕР ----
 async function startScanner() {
   if (!isModalOpen) return;
 
@@ -485,7 +478,6 @@ async function startScanner() {
       { facingMode: "environment" },
       config,
       async (decodedText) => {
-        // Успешное сканирование
         console.log("Отсканирован код:", decodedText);
         try {
           if (html5QrCode) {
@@ -493,18 +485,17 @@ async function startScanner() {
             await html5QrCode.clear();
           }
         } catch (e) {}
-        closeModal();
+        closeMainModal();
         await fetchProductByBarcode(decodedText);
       },
       (error) => {
-        // Ошибки сканирования игнорируем (это нормально, кадры просто не читаются)
         if (error && error.includes("NotFoundException")) return;
       }
     );
   } catch (err) {
     console.error("Ошибка запуска камеры:", err);
     showToast("Не удалось запустить камеру. Проверьте разрешения.", true);
-    closeModal();
+    closeMainModal();
   }
 }
 
@@ -535,7 +526,6 @@ function openScannerModal() {
     html5QrCode.stop().catch(() => {});
   }
   modal.style.display = "flex";
-  // Небольшая задержка для рендеринга модалки
   setTimeout(() => {
     if (modal.style.display === "flex") {
       startScanner();
@@ -543,29 +533,25 @@ function openScannerModal() {
   }, 300);
 }
 
-// ---- ЗАКРЫТИЕ МОДАЛКИ ----
-async function closeModal() {
-  isModalOpen = false;
-  modal.style.display = "none";
-  if (html5QrCode) {
-    try {
-      await html5QrCode.stop();
-      await html5QrCode.clear();
-    } catch (e) {}
-    html5QrCode = null;
-  }
-  scannerContainer.style.display = "none";
-  scannerContainer.innerHTML = "";
-}
-
 // ---- ИНИЦИАЛИЗАЦИЯ ----
 calcBtn.onclick = calculate;
-copyBtn.onclick = copyResult;
 scanBarcodeBtn.onclick = openScannerModal;
 searchProductBtn.onclick = openSearchModal;
-closeModalBtn.onclick = closeModal;
 document.getElementById("editProductBtn").onclick = handleCreateProduct;
+
+modalCopyBtn.onclick = copyResultFromModal;
+
+// Закрытие модалок по крестику
+document.getElementById("resultModalCloseX").onclick = closeResultModal;
+document.getElementById("mainModalCloseX").onclick = closeMainModal;
+
+// Закрытие по клику на фон
+resultModal.onclick = (e) => {
+  if (e.target === resultModal) closeResultModal();
+};
+modal.onclick = (e) => {
+  if (e.target === modal) closeMainModal();
+};
 
 loadHistory();
 updateProductUI();
-calculate();
