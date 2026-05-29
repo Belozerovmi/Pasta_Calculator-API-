@@ -187,7 +187,7 @@ h1 {
 .history-item {
   background: #f6f8f4;
   border: 1px solid #e2e7dd;
-  border-radius: 24px;
+  border-radius: 10px;
   padding: 14px 18px;
   min-width: 160px;
   cursor: pointer;
@@ -1054,6 +1054,12 @@ input:focus {
 .input-wrapper input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+@media (max-width: 550px) {
+  .history-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 375px) {

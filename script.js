@@ -152,20 +152,20 @@ function setButtonLoading(button, isLoading) {
   }
 }
 
-function showToast(message, isError = false) {
-  let toast = document.querySelector(".toast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.className = "toast";
-    document.body.appendChild(toast);
-  }
-  toast.textContent = message;
-  toast.style.background = isError ? "#b4656d" : "#2e5a4b";
-  toast.classList.add("show");
-  setTimeout(() => {
-    toast.classList.remove("show");
-  }, 2500);
-}
+// function showToast(message, isError = false) {
+//   let toast = document.querySelector(".toast");
+//   if (!toast) {
+//     toast = document.createElement("div");
+//     toast.className = "toast";
+//     document.body.appendChild(toast);
+//   }
+//   toast.textContent = message;
+//   toast.style.background = isError ? "#b4656d" : "#2e5a4b";
+//   toast.classList.add("show");
+//   setTimeout(() => {
+//     toast.classList.remove("show");
+//   }, 2500);
+// }
 
 function closeResultModal() {
   resultModal.style.display = "none";
@@ -239,23 +239,23 @@ function showCustomProductDialog() {
         <h4>Создать свой продукт</h4>
         <div class="dialog-field">
           <label>Название продукта</label>
-          <input type="text" id="dialog_name" placeholder="например: Макароны Barilla" value="Мои макароны" maxlength="50">
+          <input type="text" id="dialog_name" placeholder="например: Макароны Barilla" value="" maxlength="50">
         </div>
         <div class="dialog-field">
           <label>Калорийность (ккал на 100 г)</label>
-          <input type="number" id="dialog_kcal" placeholder="350" value="350" step="1">
+          <input type="number" id="dialog_kcal" placeholder="350" value="" step="1">
         </div>
         <div class="dialog-field">
           <label>Белки (г на 100 г)</label>
-          <input type="number" id="dialog_protein" placeholder="12" value="12" step="0.1">
+          <input type="number" id="dialog_protein" placeholder="12" value="" step="0.1">
         </div>
         <div class="dialog-field">
           <label>Жиры (г на 100 г)</label>
-          <input type="number" id="dialog_fat" placeholder="1.5" value="1.5" step="0.1">
+          <input type="number" id="dialog_fat" placeholder="1.5" value="" step="0.1">
         </div>
         <div class="dialog-field">
           <label>Углеводы (г на 100 г)</label>
-          <input type="number" id="dialog_carbs" placeholder="70" value="70" step="0.1">
+          <input type="number" id="dialog_carbs" placeholder="70" value="" step="0.1">
         </div>
         <div class="custom-dialog-buttons">
           <button class="dialog-confirm">Сохранить</button>
@@ -412,7 +412,7 @@ function renderHistory() {
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8l0 4l2 2" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>
         <span>Недавние продукты</span>
       </div>
-      <div class="history-empty">✨ Здесь будут появляться макароны, крупы и рис, которые вы искали</div>
+      <div class="history-empty">Здесь будут появляться макароны, крупы и рис, которые вы искали</div>
     `;
     return;
   }
@@ -583,35 +583,52 @@ async function fetchProductByBarcode(barcode) {
 }
 
 // ---- ПОИСК ПРОДУКТА ----
+// ---- ПОИСК ПРОДУКТА (РАБОЧАЯ ВЕРСИЯ) ----
 let searchTimeout = null;
 let isSearching = false;
 
 async function searchProduct(query) {
+  // Очищаем предыдущий таймаут
   if (searchTimeout) clearTimeout(searchTimeout);
 
+  // Если запрос слишком короткий — очищаем результаты и выходим
   if (!query || query.trim().length < 2) {
     searchResultsDiv.innerHTML = "";
     return;
   }
 
+  // Делаем debounce — ждём 500ms после последнего ввода
   searchTimeout = setTimeout(async () => {
+    // Предотвращаем повторные одновременные запросы
     if (isSearching) return;
     isSearching = true;
 
+    // Показываем индикатор загрузки
     showModalLoading(true, true);
 
+    // Используем проверенный API V1 (работает стабильно)
     const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20`;
 
     try {
       const resp = await fetch(url, {
-        headers: { "User-Agent": "MacroCalc/2.0" },
+        headers: {
+          "User-Agent": "MacroCalc/2.0 (Mozilla/5.0)",
+        },
       });
+
+      if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+
       const data = await resp.json();
 
+      // Убираем индикатор загрузки
       showModalLoading(false, true);
       searchResultsDiv.innerHTML = "";
 
+      // Проверяем, есть ли продукты
       if (data.products && data.products.length > 0) {
+        // Фильтруем только продукты с КБЖУ
         const validProducts = data.products.filter((prod) => prod.nutriments);
 
         if (validProducts.length === 0) {
@@ -623,7 +640,9 @@ async function searchProduct(query) {
             const div = document.createElement("div");
             div.className = "search-item";
 
-            let productName = prod.product_name || "Без названия";
+            // Приводим название к нормальному виду
+            let productName =
+              prod.product_name || prod.brands || "Без названия";
             if (productName !== "Без названия" && productName.length > 0) {
               productName =
                 productName.charAt(0).toUpperCase() + productName.slice(1);
@@ -631,7 +650,7 @@ async function searchProduct(query) {
 
             div.innerHTML = `<strong>${productName}</strong><br>
               <span style="font-size:13px;color:#858585">
-                ${nut["energy-kcal_100g"] || "?"} ккал · 
+                ${nut["energy-kcal_100g"] || nut["energy_100g"] || "?"} ккал · 
                 белки ${nut["proteins_100g"] || "?"}г · 
                 жиры ${nut["fat_100g"] || "?"}г · 
                 углеводы ${nut["carbohydrates_100g"] || "?"}г
@@ -640,7 +659,7 @@ async function searchProduct(query) {
             div.onclick = () => {
               currentProduct = {
                 name: productName,
-                kcal: nut["energy-kcal_100g"] || 350,
+                kcal: nut["energy-kcal_100g"] || nut["energy_100g"] || 350,
                 protein: nut["proteins_100g"] || 10,
                 fat: nut["fat_100g"] || 1,
                 carbs: nut["carbohydrates_100g"] || 70,
