@@ -4,6 +4,10 @@
     <link rel="stylesheet" href="style.css" />
     <link rel="icon" href="favicon.ico" type="image/x-icon" />
     <link rel="manifest" href="/manifest.json" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
     <!-- <link rel="apple-touch-icon" sizes="180x180" href="favicon.ico" />
     <link rel="icon" type="image/png" sizes="192x192" href="favicon.ico" />
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.ico" /> -->
@@ -25,6 +29,42 @@
       </div>
       <div class="subhead">Рассчитайте вес сухих макарон в порции</div>
 
+      <div class="category-selector" id="categorySelector">
+        <div class="slider-indicator" id="sliderIndicator"></div>
+        <button class="category-btn active" data-category="pasta">
+          <i class="fas fa-utensils"></i> Макароны
+        </button>
+        <button class="category-btn" data-category="rice">
+          <i class="fas fa-bowl-rice"></i> Рис
+        </button>
+        <button class="category-btn" data-category="grains">
+          <i class="fas fa-seedling"></i> Крупы
+        </button>
+      </div>
+      <!-- Подсказка по развариванию -->
+      <div id="cookingHint" class="cooking-hint">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="icon icon-tabler icons-tabler-outline icon-tabler-info-circle"
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+          <path d="M12 9h.01" />
+          <path d="M11 12h1v4h1" />
+        </svg>
+        <div class="cooking-hint-text">
+          <strong>Подсказка:</strong>
+          <span id="hintText">100 г сухих макарон ≈ 240 г варёных</span>
+        </div>
+      </div>
       <!-- Карточка продукта -->
       <div class="product-card">
         <div class="product-name-row">
@@ -45,6 +85,7 @@
                 d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
               />
             </svg>
+            <span class="edit-link-text">Изменить</span>
           </button>
         </div>
         <div class="nutrients" id="nutrientsPanel">
@@ -164,7 +205,7 @@
       <div id="resultModal" class="result-modal">
         <div class="result-modal-content">
           <button class="result-modal-close" id="resultModalCloseX">✕</button>
-          <div class="result-modal-icon">
+          <!-- <div class="result-modal-icon">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -182,8 +223,8 @@
               <path d="M17 12L22 12" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-          </div>
-          <div class="result-modal-label">СУХИХ МАКАРОН В ПОРЦИИ</div>
+          </div> -->
+          <div class="result-modal-label">В ПОРЦИИ</div>
           <div class="result-modal-value">
             <span id="modalDryPortion">--</span>
             <span class="result-modal-unit">г</span>
@@ -228,6 +269,30 @@
         />
         <div id="searchResults" class="search-results"></div>
         <div id="scannerContainer" style="display: none"></div>
+
+        <!-- Кнопка управления вспышкой (появляется только при сканировании) -->
+        <button id="flashToggleBtn" class="flash-btn" style="display: none">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <path
+              d="M15 6L9 12H14L12 18L18 12H13L15 6Z"
+              stroke="currentColor"
+              fill="none"
+            />
+            <path
+              d="M8 4L4 8L8 12M16 20L20 16L16 12"
+              stroke="currentColor"
+              stroke-linecap="round"
+            />
+          </svg>
+          Вспышка
+        </button>
       </div>
     </div>
     <!-- ФУТЕР -->
