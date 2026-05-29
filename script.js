@@ -875,7 +875,7 @@ function openScannerModal() {
   flashEnabled = false;
   currentCameraTrack = null;
 
-  modalTitle.innerText = "Сканер штрихкода";
+  modalTitle.innerText = "Сканирование штрихкода";
   scannerContainer.style.display = "block";
   searchInput.style.display = "none";
   searchResultsDiv.style.display = "none";
