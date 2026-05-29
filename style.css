@@ -20,6 +20,27 @@ body {
   transition: background 0.2s;
 }
 
+/* ===== БЛОКИРОВКА СКРОЛЛА ПРИ ОТКРЫТОЙ МОДАЛКЕ ===== */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* Для модальных окон -確保 фон не прокручивается */
+.modal,
+.result-modal {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Контент модалки не должен влиять на блокировку */
+.modal-content,
+.result-modal-content {
+  pointer-events: auto;
+}
+
 .container {
   max-width: 560px;
   margin: 0 auto;
@@ -1096,4 +1117,46 @@ input:focus {
     gap: 8px;
     /* flex-direction: column; */
   }
+}
+/* Кнопка удаления в истории */
+.history-delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #acbdaa;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.history-delete-btn:hover {
+  background: #e2e7dd;
+  color: #b4656d;
+}
+
+.history-delete-btn:active {
+  transform: scale(0.9);
+}
+
+.history-load-more {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid #acbdaa;
+  border-radius: 40px;
+  color: #1e2d4c;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.history-load-more:active {
+  background: #f0f3ec;
+  transform: scale(0.97);
 }
