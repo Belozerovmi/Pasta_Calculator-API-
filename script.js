@@ -26,8 +26,10 @@ const productPresets = {
 let currentCategory = "pasta";
 let currentProduct = { ...productPresets.pasta, barcode: null };
 
-// ---- История продуктов ----
+// ---- История продуктов (максимум 30, показываем по 15) ----
 let productHistory = [];
+let historyDisplayLimit = 15; // Сколько показываем
+let historyTotalLimit = 30; // Максимум храним
 
 // DOM элементы
 const productNameEl = document.getElementById("productName");
@@ -55,6 +57,34 @@ let html5QrCode = null;
 let isModalOpen = false;
 let isProcessing = false;
 
+// ---- БЛОКИРОВКА СКРОЛЛА ФОНА ----
+function lockBodyScroll() {
+  const scrollY = window.scrollY;
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+  document.body.style.height = "100%";
+  document.body.style.overflow = "hidden";
+  document.body.dataset.scrollY = scrollY;
+}
+
+function unlockBodyScroll() {
+  const scrollY = document.body.dataset.scrollY;
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+  document.body.style.height = "";
+  document.body.style.overflow = "";
+  if (scrollY) {
+    window.scrollTo(0, parseInt(scrollY));
+  }
+  delete document.body.dataset.scrollY;
+}
+
 // ---- СМЕНА КАТЕГОРИИ (БЕЗ УВЕДОМЛЕНИЙ) ----
 function setupCategoryButtons() {
   const buttons = document.querySelectorAll(".category-btn");
@@ -71,7 +101,6 @@ function setupCategoryButtons() {
       updateProductUI();
       updateCookingHint(category);
 
-      // Значения по умолчанию
       if (category === "pasta") {
         dryTotal.value = "100";
         cookedTotal.value = "240";
@@ -85,8 +114,6 @@ function setupCategoryButtons() {
         cookedTotal.value = "250";
         portionCooked.value = "200";
       }
-
-      // Уведомление УБРАНО — больше не бесит
     });
   });
 }
@@ -125,23 +152,24 @@ function setButtonLoading(button, isLoading) {
   }
 }
 
-// function showToast(message, isError = false) {
-//   let toast = document.querySelector(".toast");
-//   if (!toast) {
-//     toast = document.createElement("div");
-//     toast.className = "toast";
-//     document.body.appendChild(toast);
-//   }
-//   toast.textContent = message;
-//   toast.style.background = isError ? "#b4656d" : "#2e5a4b";
-//   toast.classList.add("show");
-//   setTimeout(() => {
-//     toast.classList.remove("show");
-//   }, 2500);
-// }
+function showToast(message, isError = false) {
+  let toast = document.querySelector(".toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.className = "toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.background = isError ? "#b4656d" : "#2e5a4b";
+  toast.classList.add("show");
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2500);
+}
 
 function closeResultModal() {
   resultModal.style.display = "none";
+  unlockBodyScroll();
 }
 
 let touchStartY = 0;
@@ -159,17 +187,20 @@ resultModal.addEventListener("touchmove", (e) => {
 });
 
 function closeMainModal() {
-  if (isProcessing) return;
+  isProcessing = false;
   isModalOpen = false;
-  modal.style.display = "none";
 
-  // Сбрасываем состояние вспышки
+  modal.style.display = "none";
+  unlockBodyScroll();
+
   flashEnabled = false;
   currentCameraTrack = null;
   const flashBtn = document.getElementById("flashToggleBtn");
   if (flashBtn) {
     flashBtn.style.display = "none";
     flashBtn.classList.remove("active");
+    flashBtn.disabled = false;
+    flashBtn.style.opacity = "1";
     flashBtn.innerHTML = `
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-bolt"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" /></svg>
       Вспышка
@@ -177,13 +208,25 @@ function closeMainModal() {
   }
 
   if (html5QrCode) {
-    html5QrCode.stop().catch(() => {});
+    try {
+      html5QrCode.stop().catch(() => {});
+      html5QrCode.clear().catch(() => {});
+    } catch (e) {}
     html5QrCode = null;
   }
+
   scannerContainer.style.display = "none";
   scannerContainer.innerHTML = "";
   searchResultsDiv.innerHTML = "";
   searchInput.value = "";
+  searchInput.style.display = "block";
+  searchResultsDiv.style.display = "block";
+
+  document.body.style.overflow = "";
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.width = "";
+  document.body.style.height = "";
 }
 
 function showCustomProductDialog() {
@@ -197,7 +240,7 @@ function showCustomProductDialog() {
         <div class="dialog-field">
           <label>Название продукта</label>
           <input type="text" id="dialog_name" placeholder="например: Макароны Barilla" value="Мои макароны" maxlength="50">
-          <div>
+        </div>
         <div class="dialog-field">
           <label>Калорийность (ккал на 100 г)</label>
           <input type="number" id="dialog_kcal" placeholder="350" value="350" step="1">
@@ -221,12 +264,16 @@ function showCustomProductDialog() {
       </div>
     `;
     document.body.appendChild(overlay);
+    lockBodyScroll();
 
     const closeBtn = overlay.querySelector(".custom-dialog-close");
     const confirmBtn = overlay.querySelector(".dialog-confirm");
     const cancelBtn = overlay.querySelector(".dialog-cancel");
 
-    const close = () => overlay.remove();
+    const close = () => {
+      overlay.remove();
+      unlockBodyScroll();
+    };
     const resolveAndClose = (result) => {
       close();
       resolve(result);
@@ -264,16 +311,19 @@ function loadHistory() {
   if (saved) {
     try {
       productHistory = JSON.parse(saved);
+      // Ограничиваем длину истории при загрузке
+      if (productHistory.length > historyTotalLimit) {
+        productHistory = productHistory.slice(0, historyTotalLimit);
+      }
       renderHistory();
     } catch (e) {}
   }
 }
 
 function saveHistory() {
-  localStorage.setItem(
-    "macrocalc_history",
-    JSON.stringify(productHistory.slice(0, 5)),
-  );
+  // Сохраняем только последние historyTotalLimit записей
+  const toSave = productHistory.slice(0, historyTotalLimit);
+  localStorage.setItem("macrocalc_history", JSON.stringify(toSave));
 }
 
 function addToHistory(product) {
@@ -289,8 +339,27 @@ function addToHistory(product) {
     carbs: product.carbs,
     barcode: product.barcode,
   });
-  if (productHistory.length > 5) productHistory.pop();
+  // Ограничиваем длину
+  if (productHistory.length > historyTotalLimit) {
+    productHistory = productHistory.slice(0, historyTotalLimit);
+  }
   saveHistory();
+  renderHistory();
+}
+
+function deleteFromHistory(index, event) {
+  event.stopPropagation();
+  productHistory.splice(index, 1);
+  saveHistory();
+  renderHistory();
+  showToast("Продукт удалён из истории");
+}
+
+function loadMoreHistory() {
+  historyDisplayLimit += 15;
+  if (historyDisplayLimit > productHistory.length) {
+    historyDisplayLimit = productHistory.length;
+  }
   renderHistory();
 }
 
@@ -316,7 +385,6 @@ function getCategoryIcon(productName) {
   ) {
     return '<i class="fas fa-seedling" style="font-size: 18px; color: #1e2d4c;"></i>';
   }
-  // Дефолтная иконка
   return '<i class="fas fa-utensil-spoon" style="font-size: 18px; color: #1e2d4c;"></i>';
 }
 
@@ -335,6 +403,9 @@ function renderHistory() {
     }
   }
 
+  const displayItems = productHistory.slice(0, historyDisplayLimit);
+  const hasMore = productHistory.length > historyDisplayLimit;
+
   if (productHistory.length === 0) {
     historySection.innerHTML = `
       <div class="history-title">
@@ -349,14 +420,14 @@ function renderHistory() {
   historySection.innerHTML = `
     <div class="history-title">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8l0 4l2 2" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>
-      <span>Недавние продукты</span>
-      <button class="history-clear" id="clearHistoryBtn">Очистить</button>
+      <span>Недавние продукты (${productHistory.length})</span>
+      <button class="history-clear" id="clearHistoryBtn">Очистить всё</button>
     </div>
     <div class="history-list">
-      ${productHistory
+      ${displayItems
         .map(
-          (p) => `
-        <div class="history-item" data-name="${p.name.replace(/"/g, "&quot;")}" data-kcal="${p.kcal}" data-protein="${p.protein}" data-fat="${p.fat}" data-carbs="${p.carbs}" data-barcode="${p.barcode || ""}">
+          (p, idx) => `
+        <div class="history-item" data-index="${idx}">
           <div class="history-item-icon">
             ${getCategoryIcon(p.name)}
           </div>
@@ -364,26 +435,46 @@ function renderHistory() {
             <div class="history-item-name">${p.name.length > 18 ? p.name.slice(0, 16) + "..." : p.name}</div>
             <div class="history-item-kcal">${Math.round(p.kcal)} ккал / 100г</div>
           </div>
+          <button class="history-delete-btn" data-index="${idx}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-linecap="round"/>
+            </svg>
+          </button>
         </div>
       `,
         )
         .join("")}
     </div>
+    ${hasMore ? `<button class="history-load-more" id="loadMoreHistoryBtn">Показать ещё (${productHistory.length - historyDisplayLimit} осталось)</button>` : ""}
   `;
 
+  // Клик по продукту — только подставляем в карточку, НЕ открываем модалку
   document.querySelectorAll(".history-item").forEach((item) => {
-    item.addEventListener("click", () => {
+    const idx = parseInt(item.dataset.index);
+    const product = productHistory[idx];
+    if (!product) return;
+
+    item.addEventListener("click", (e) => {
+      if (e.target.closest(".history-delete-btn")) return;
       currentProduct = {
-        name: item.dataset.name,
-        kcal: parseFloat(item.dataset.kcal),
-        protein: parseFloat(item.dataset.protein),
-        fat: parseFloat(item.dataset.fat),
-        carbs: parseFloat(item.dataset.carbs),
-        barcode: item.dataset.barcode || null,
+        name: product.name,
+        kcal: product.kcal,
+        protein: product.protein,
+        fat: product.fat,
+        carbs: product.carbs,
+        barcode: product.barcode || null,
       };
       updateProductUI();
-      calculate();
       showToast(`Выбран: ${currentProduct.name}`);
+    });
+  });
+
+  // Кнопки удаления
+  document.querySelectorAll(".history-delete-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.index);
+      deleteFromHistory(idx, e);
     });
   });
 
@@ -391,16 +482,22 @@ function renderHistory() {
   if (clearBtn) {
     clearBtn.onclick = () => {
       productHistory = [];
+      historyDisplayLimit = 15;
       saveHistory();
       renderHistory();
-      showToast("История очищена");
+      showToast("Вся история очищена");
     };
+  }
+
+  const loadMoreBtn = document.getElementById("loadMoreHistoryBtn");
+  if (loadMoreBtn) {
+    loadMoreBtn.onclick = () => loadMoreHistory();
   }
 }
 
 function updateProductUI() {
   productNameEl.innerText = truncateProductName(currentProduct.name, 32);
-  productNameEl.title = currentProduct.name; // Полное название всплывает при наведении
+  productNameEl.title = currentProduct.name;
   kcalVal.innerText = Math.round(currentProduct.kcal);
   proteinVal.innerText = currentProduct.protein.toFixed(1);
   fatVal.innerText = currentProduct.fat.toFixed(1);
@@ -434,6 +531,7 @@ function calculate() {
   modalKbju.innerHTML = `${Math.round(kcalPortion)} ккал &nbsp;|&nbsp; ${proteinPortion.toFixed(1)}г бел &nbsp;|&nbsp; ${fatPortion.toFixed(1)}г жир &nbsp;|&nbsp; ${carbsPortion.toFixed(1)}г угл`;
 
   resultModal.style.display = "flex";
+  lockBodyScroll();
 }
 
 function copyResultFromModal() {
@@ -470,7 +568,6 @@ async function fetchProductByBarcode(barcode) {
         barcode: barcode,
       };
       updateProductUI();
-      calculate();
       addToHistory(currentProduct);
       showToast(`Найден: ${currentProduct.name}`);
       return true;
@@ -485,30 +582,24 @@ async function fetchProductByBarcode(barcode) {
   }
 }
 
-// ---- ПОИСК ПРОДУКТА (ИСПРАВЛЕННЫЙ) ----
+// ---- ПОИСК ПРОДУКТА ----
 let searchTimeout = null;
 let isSearching = false;
 
 async function searchProduct(query) {
-  // Очищаем предыдущий таймаут
   if (searchTimeout) clearTimeout(searchTimeout);
 
-  // Если запрос слишком короткий — очищаем результаты и выходим
   if (!query || query.trim().length < 2) {
     searchResultsDiv.innerHTML = "";
     return;
   }
 
-  // Делаем debounce — ждём 500ms после последнего ввода
   searchTimeout = setTimeout(async () => {
-    // Предотвращаем повторные одновременные запросы
     if (isSearching) return;
     isSearching = true;
 
-    // Показываем индикатор загрузки
     showModalLoading(true, true);
 
-    // Кодируем запрос (API сам обработает регистр)
     const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20`;
 
     try {
@@ -517,12 +608,10 @@ async function searchProduct(query) {
       });
       const data = await resp.json();
 
-      // Убираем индикатор загрузки
       showModalLoading(false, true);
       searchResultsDiv.innerHTML = "";
 
       if (data.products && data.products.length > 0) {
-        // Фильтруем только продукты с КБЖУ и нормализуем регистр для отображения
         const validProducts = data.products.filter((prod) => prod.nutriments);
 
         if (validProducts.length === 0) {
@@ -534,9 +623,7 @@ async function searchProduct(query) {
             const div = document.createElement("div");
             div.className = "search-item";
 
-            // Приводим название к нормальному виду (первая буква заглавная)
             let productName = prod.product_name || "Без названия";
-            // Простое приведение первой буквы к заглавной для красоты
             if (productName !== "Без названия" && productName.length > 0) {
               productName =
                 productName.charAt(0).toUpperCase() + productName.slice(1);
@@ -560,7 +647,6 @@ async function searchProduct(query) {
                 barcode: prod.code,
               };
               updateProductUI();
-              calculate();
               addToHistory(currentProduct);
               closeMainModal();
               showToast(`Выбран: ${currentProduct.name}`);
@@ -580,7 +666,7 @@ async function searchProduct(query) {
     } finally {
       isSearching = false;
     }
-  }, 500); // Задержка 500ms — пользователь успевает ввести слово
+  }, 500);
 }
 
 async function handleCreateProduct() {
@@ -595,7 +681,6 @@ async function handleCreateProduct() {
       barcode: null,
     };
     updateProductUI();
-    calculate();
     addToHistory(currentProduct);
     showToast(`Создан: ${currentProduct.name}`);
   }
@@ -615,7 +700,6 @@ async function startScanner() {
   scannerContainer.innerHTML = "";
   showModalLoading(true, false);
 
-  // Прячем кнопку вспышки до запуска камеры
   const flashBtn = document.getElementById("flashToggleBtn");
   if (flashBtn) flashBtn.style.display = "none";
 
@@ -636,7 +720,6 @@ async function startScanner() {
   };
 
   try {
-    // Сохраняем трек камеры для управления вспышкой
     await html5QrCode.start(
       { facingMode: "environment" },
       config,
@@ -652,8 +735,25 @@ async function startScanner() {
         showModalLoading(true, false);
         await fetchProductByBarcode(decodedText);
         showModalLoading(false, false);
-        closeMainModal();
+
         isProcessing = false;
+        isModalOpen = false;
+        modal.style.display = "none";
+        unlockBodyScroll();
+
+        scannerContainer.style.display = "none";
+        scannerContainer.innerHTML = "";
+        searchResultsDiv.innerHTML = "";
+        searchInput.value = "";
+        searchInput.style.display = "block";
+        searchResultsDiv.style.display = "block";
+
+        flashEnabled = false;
+        currentCameraTrack = null;
+        if (flashBtn) {
+          flashBtn.style.display = "none";
+          flashBtn.classList.remove("active");
+        }
       },
       (error) => {
         if (error && error.includes("NotFoundException")) return;
@@ -663,19 +763,15 @@ async function startScanner() {
 
     showModalLoading(false, false);
 
-    // Показываем кнопку вспышки после успешного запуска камеры
     if (flashBtn) flashBtn.style.display = "flex";
 
-    // Пытаемся получить доступ к управлению вспышкой
     try {
-      // Получаем видеоэлемент из сканера
       const videoElement = document.querySelector("#scannerContainer video");
       if (videoElement && videoElement.srcObject) {
         const stream = videoElement.srcObject;
         const track = stream.getVideoTracks()[0];
         currentCameraTrack = track;
 
-        // Проверяем, поддерживается ли вспышка
         const capabilities = track.getCapabilities();
         if (capabilities.torch) {
           flashBtn.disabled = false;
@@ -687,18 +783,21 @@ async function startScanner() {
       }
     } catch (e) {
       console.warn("Не удалось получить доступ к управлению вспышкой:", e);
-      flashBtn.disabled = true;
+      if (flashBtn) flashBtn.disabled = true;
     }
   } catch (err) {
     console.error("Ошибка запуска камеры:", err);
     showModalLoading(false, false);
     showToast("Не удалось запустить камеру. Проверьте разрешения.", true);
-    closeMainModal();
     isProcessing = false;
+    isModalOpen = false;
+    modal.style.display = "none";
+    unlockBodyScroll();
+    scannerContainer.style.display = "none";
+    scannerContainer.innerHTML = "";
   }
 }
 
-// ---- УПРАВЛЕНИЕ ВСПЫШКОЙ ----
 function setupFlashButton() {
   const flashBtn = document.getElementById("flashToggleBtn");
   if (!flashBtn) return;
@@ -732,43 +831,87 @@ function setupFlashButton() {
   });
 }
 
+function pushModalState() {
+  history.pushState({ modalOpen: true }, "");
+}
+
 function openSearchModal() {
   if (isProcessing) return;
-  isModalOpen = true;
+
   isProcessing = false;
+  isModalOpen = true;
+
   modalTitle.innerText = "Поиск продукта";
   scannerContainer.style.display = "none";
   searchInput.style.display = "block";
   searchResultsDiv.style.display = "block";
   searchInput.value = "";
   searchResultsDiv.innerHTML = "";
+
   if (html5QrCode) {
     html5QrCode.stop().catch(() => {});
     html5QrCode = null;
   }
+
+  flashEnabled = false;
+  currentCameraTrack = null;
+  const flashBtn = document.getElementById("flashToggleBtn");
+  if (flashBtn) {
+    flashBtn.style.display = "none";
+    flashBtn.classList.remove("active");
+  }
+
   searchInput.oninput = (e) => searchProduct(e.target.value);
   modal.style.display = "flex";
+  lockBodyScroll();
+  pushModalState();
 }
 
 function openScannerModal() {
   if (isProcessing) return;
-  isModalOpen = true;
+
   isProcessing = false;
+  isModalOpen = true;
+  flashEnabled = false;
+  currentCameraTrack = null;
+
   modalTitle.innerText = "Сканер штрихкода";
   scannerContainer.style.display = "block";
   searchInput.style.display = "none";
   searchResultsDiv.style.display = "none";
+  scannerContainer.innerHTML = "";
+
   if (html5QrCode) {
     html5QrCode.stop().catch(() => {});
     html5QrCode = null;
   }
+
+  const flashBtn = document.getElementById("flashToggleBtn");
+  if (flashBtn) {
+    flashBtn.style.display = "none";
+    flashBtn.classList.remove("active");
+    flashBtn.disabled = false;
+  }
+
   modal.style.display = "flex";
+  lockBodyScroll();
+  pushModalState();
+
   setTimeout(() => {
     if (modal.style.display === "flex") {
       startScanner();
     }
   }, 300);
 }
+
+window.addEventListener("popstate", () => {
+  if (modal.style.display === "flex") {
+    closeMainModal();
+  }
+  if (resultModal.style.display === "flex") {
+    closeResultModal();
+  }
+});
 
 // ---- ИНИЦИАЛИЗАЦИЯ ----
 calcBtn.onclick = calculate;
@@ -788,7 +931,6 @@ modal.onclick = (e) => {
   if (e.target === modal && !isProcessing) closeMainModal();
 };
 
-// ---- ПОДСКАЗКА ПО РАЗВАРИВАНИЮ ----
 const cookingRatios = {
   pasta: { dry: 100, cooked: 240, text: "100 г сухих макарон ≈ 240 г варёных" },
   rice: { dry: 100, cooked: 300, text: "100 г сухого риса ≈ 300 г варёного" },
@@ -801,7 +943,7 @@ function updateCookingHint(category) {
     hintSpan.textContent = cookingRatios[category].text;
   }
 }
-// ---- ПЛАВНАЯ ПЕРЕМЕЩАЮЩАЯСЯ ПЛАШКА ----
+
 function updateSliderPosition() {
   const activeBtn = document.querySelector(".category-btn.active");
   const slider = document.getElementById("sliderIndicator");
@@ -812,7 +954,6 @@ function updateSliderPosition() {
   const btnRect = activeBtn.getBoundingClientRect();
   const selectorRect = selector.getBoundingClientRect();
 
-  // Вычисляем отступ слева и ширину
   const left = btnRect.left - selectorRect.left;
   const width = btnRect.width;
 
@@ -820,14 +961,10 @@ function updateSliderPosition() {
   slider.style.width = `${width}px`;
 }
 
-// Обновлённая функция смены категории
-function setupCategoryButtons() {
+function setupCategoryButtonsWithSlider() {
   const buttons = document.querySelectorAll(".category-btn");
 
-  // Устанавливаем начальную позицию плашки
   setTimeout(() => updateSliderPosition(), 10);
-
-  // При ресайзе окна — пересчитываем позицию
   window.addEventListener("resize", () => updateSliderPosition());
 
   buttons.forEach((btn) => {
@@ -835,20 +972,15 @@ function setupCategoryButtons() {
       const category = btn.dataset.category;
       if (!category || !productPresets[category]) return;
 
-      // Меняем активный класс
       buttons.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
-
-      // Перемещаем плашку (CSS сам сделает анимацию)
       updateSliderPosition();
 
-      // Обновляем данные продукта
       currentCategory = category;
       currentProduct = { ...productPresets[category], barcode: null };
       updateProductUI();
       updateCookingHint(category);
 
-      // Подставляем значения по умолчанию
       const defaults = {
         pasta: { dry: 100, cooked: 240, portion: 200 },
         rice: { dry: 100, cooked: 300, portion: 200 },
@@ -863,13 +995,13 @@ function setupCategoryButtons() {
   });
 }
 
-// ---- ОБРЕЗКА ДЛИННОГО НАЗВАНИЯ ПРОДУКТА ----
 function truncateProductName(name, maxLength = 35) {
   if (!name) return "Продукт";
   if (name.length <= maxLength) return name;
   return name.slice(0, maxLength) + "...";
 }
+
 setupFlashButton();
-setupCategoryButtons();
+setupCategoryButtonsWithSlider();
 loadHistory();
 updateProductUI();
