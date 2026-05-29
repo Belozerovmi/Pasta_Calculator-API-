@@ -171,10 +171,7 @@ function closeMainModal() {
     flashBtn.style.display = "none";
     flashBtn.classList.remove("active");
     flashBtn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M15 6L9 12H14L12 18L18 12H13L15 6Z" stroke="currentColor" fill="none"/>
-        <path d="M8 4L4 8L8 12M16 20L20 16L16 12" stroke="currentColor" stroke-linecap="round"/>
-      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-bolt"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" /></svg>
       Вспышка
     `;
   }
