@@ -29,8 +29,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Категорий-3-%231e2d4c?style=flat-square" alt="Категорий">
-  <img src="https://img.shields.io/badge/Поиск-по_штрихкоду-и-названию-%23858585?style=flat-square" alt="Поиск">
-  <img src="https://img.shields.io/badge/PWA-Готова-%23acbdaa?style=flat-square" alt="PWA">
+  <img src="https://img.shields.io/badge/PWA-Готов-%23acbdaa?style=flat-square" alt="PWA">
 </p>
 
 ### Калькулятор порций
