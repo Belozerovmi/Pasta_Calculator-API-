@@ -116,8 +116,6 @@ Pasta_Calculator-API/
 └── icons/ # Иконки для PWA (72px — 512px)
 
 ```
----
-
 
 ---
 
