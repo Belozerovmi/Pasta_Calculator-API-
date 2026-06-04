@@ -155,11 +155,12 @@ Pasta_Calculator-API/
 ## Установка и запуск
 
 1. **Клонируйте репозиторий**
-   ```bash
+```bash
    git clone https://github.com/Belozerovmi/Pasta_Calculator-API.git
+```
    
 2. **Перейдите в папку проекта**
- ```bash
+```bash
 cd Pasta_Calculator-API
 ```
 
