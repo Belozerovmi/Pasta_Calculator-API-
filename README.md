@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://belozerovmi.github.io/Pasta_Calculator-API/">
+  <a href="https://pasta-calculator-api.vercel.app/">
     <img src="https://img.shields.io/badge/Сайт-Открыть-%231e2d4c?style=for-the-badge" alt="Сайт-открыть">
   </a>
   <a href="https://github.com/Belozerovmi/Pasta_Calculator-API">
